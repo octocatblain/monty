@@ -1,63 +1,45 @@
 #include "monty.h"
-
+bus_t bus = {NULL, NULL, NULL, 0};
 /**
- * refractor - to initialize in empty data
- * @strct: global variable
- * Return: (strct)
- */
-strct_t refractor(strct_t strct)
+* main - monty code interpreter
+* @argc: number of arguments
+* @argv: monty file location
+* Return: 0 on success
+*/
+int main(int argc, char *argv[])
 {
-	strct.file = NULL;
-	strct.line = NULL;
-	strct.stack = NULL;
-	strct.line_number = 1;
-	strct.state = 0;
-	return (strct);
-}
+	char *content;
+	FILE *file;
+	size_t size = 0;
+	ssize_t read_line = 1;
+	stack_t *stack = NULL;
+	unsigned int counter = 0;
 
-/**
- * main - Entry point
- * @argc: Number of arguments
- * @argv: Pointer to arguments array
- * Return: 0 on success or 1 on error
- */
-int main(int argc, char **argv)
-{
-	strct_t strct;
-	char *opcode, *val;
-	ssize_t read = 0;
-	size_t len = 0;
-
-	strct = refractor(strct);
 	if (argc != 2)
 	{
-		dprintf(STDERR_FILENO, "USAGE: monty file\n");
+		fprintf(stderr, "USAGE: monty file\n");
 		exit(EXIT_FAILURE);
 	}
-	strct.file = fopen(argv[1], "r");
-	if (!strct.file)
+	file = fopen(argv[1], "r");
+	bus.file = file;
+	if (!file)
 	{
-		dprintf(STDERR_FILENO, "Error: Can't open file %s\n", argv[1]);
+		fprintf(stderr, "Error: Can't open file %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
-	while ((read = getline(&strct.line, &len, strct.file)) != -1)
+	while (read_line > 0)
 	{
-		opcode = strtok(strct.line, " \t");
-		if (*opcode == '#' || *opcode == '\n')
+		content = NULL;
+		read_line = getline(&content, &size, file);
+		bus.content = content;
+		counter++;
+		if (read_line > 0)
 		{
-			strct.line_number++;
-			continue;
+			execute(content, &stack, counter, file);
 		}
-		if (strcmp(opcode, "push") == 0)
-		{
-			val = strtok(NULL, " ");
-			strct = push1(val, strct);
-			strct.line_number++;
-			continue;
-		}
-		lst_opcode(&strct.stack, opcode, strct);
-		strct.line_number++;
+		free(content);
 	}
-	free_collect(strct);
-	return (0);
+	free_stack(stack);
+	fclose(file);
+return (0);
 }
